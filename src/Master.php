@@ -24,6 +24,34 @@ class Master
     protected $timezone = 'UTC';
 
     /**
+     * 信息存储目录
+     *
+     * @var string
+     */
+    protected $storageDir;
+
+    /**
+     * 启动文件
+     *
+     * @var string
+     */
+    protected $startFile;
+
+    /**
+     * 主进程 PID 存储文件
+     *
+     * @var string
+     */
+    protected $pidFile;
+
+    /**
+     * 日志目录
+     *
+     * @var string
+     */
+    protected $logDir;
+
+    /**
      * 初始化运行环境
      *
      * @param string $profile
@@ -57,6 +85,7 @@ class Master
 
         date_default_timezone_set($this->timezone);
 
+        $this->runtimePath();
     }
 
     /**
@@ -67,6 +96,30 @@ class Master
         foreach (include $this->profile as $name => $value) {
             $this->{$name} = $value;
         }
+    }
+
+    /**
+     * 初始化运行目录文件路径
+     */
+    protected function runtimePath()
+    {
+        // 初始化存储目录
+        $this->storageDir = realpath($this->storageDir ?: __DIR__ . '/../storage') . DIRECTORY_SEPARATOR;
+        is_dir($this->storageDir) || mkdir($this->storageDir, 0777);
+
+        // 获取启动文件路径
+        $backtrace = debug_backtrace();
+        $this->startFile = end($backtrace)['file'];
+
+        // 启动文件路径标记
+        $name = str_replace(['/', '\\', '.'], '_', $this->startFile);
+
+        // 初始化日志目录
+        $this->logDir = $this->storageDir . $name . DIRECTORY_SEPARATOR;
+        is_dir($this->logDir) || mkdir($this->logDir, 0777);
+
+        // 主进程 PID 保存文件
+        $this->pidFile = $this->storageDir . $name . '.pid';
     }
 
     /**
