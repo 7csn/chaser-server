@@ -27,7 +27,7 @@ class Master
 
         $this->profile = realpath($profile ?: __DIR__ . '/../config.php');
 
-        $this->settings();
+        $this->initialize();
     }
 
     /**
@@ -42,7 +42,17 @@ class Master
     }
 
     /**
-     * 初始化属性配置
+     * 加载配置
+     */
+    protected function initialize()
+    {
+        $this->settings();
+
+
+    }
+
+    /**
+     * 重置属性配置
      */
     protected function settings()
     {
