@@ -1,0 +1,22 @@
+{
+  "name": "7csn/chaser-server",
+  "description": "运行于 Linux 的 PHP socket 多进程框架。",
+  "type": "library",
+  "require": {
+    "php": ">=7.1.0",
+    "7csn/container": "dev-master"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "7csn",
+      "email": "1479672753@qq.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "autoload": {
+    "psr-4": {
+      "chaser\\server\\": "src/"
+    }
+  }
+}
