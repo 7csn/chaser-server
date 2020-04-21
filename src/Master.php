@@ -17,7 +17,7 @@ class Master
     protected $profile;
 
     /**
-     * 初始化配置
+     * 初始化运行环境
      *
      * @param string $profile
      */
@@ -26,6 +26,8 @@ class Master
         $this->checkEnv();
 
         $this->profile = realpath($profile ?: __DIR__ . '/../config.php');
+
+        $this->settings();
     }
 
     /**
@@ -37,6 +39,16 @@ class Master
         PHP_OS === 'Linux' || $this->quit('only run in Linux platform');
         extension_loaded('posix') || $this->quit('please ensure POSIX extension are installed');
         extension_loaded('pcntl') || $this->quit('please ensure PCNTL extension are installed');
+    }
+
+    /**
+     * 初始化属性配置
+     */
+    protected function settings()
+    {
+        foreach (include $this->profile as $name => $value) {
+            $this->{$name} = $value;
+        }
     }
 
     /**
