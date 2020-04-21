@@ -17,6 +17,13 @@ class Master
     protected $profile;
 
     /**
+     * 时区
+     *
+     * @var string
+     */
+    protected $timezone = 'UTC';
+
+    /**
      * 初始化运行环境
      *
      * @param string $profile
@@ -48,6 +55,7 @@ class Master
     {
         $this->settings();
 
+        date_default_timezone_set($this->timezone);
 
     }
 
