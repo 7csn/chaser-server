@@ -3,6 +3,8 @@
 namespace chaser\server;
 
 use chaser\container\Container;
+use chaser\server\worker\Http;
+use chaser\server\worker\Worker;
 
 /**
  * 管理类
@@ -33,11 +35,27 @@ class Master
     protected $timezone = 'UTC';
 
     /**
+     * 服务器需求配置
+     *
+     * @var array
+     */
+    protected $requirements = [];
+
+    /**
      * 信息存储目录
      *
      * @var string
      */
     protected $storageDir;
+
+    /**
+     * 职能列表
+     *
+     * @var array
+     */
+    protected $functions = [
+        'http' => Http::class
+    ];
 
     /**
      * 启动文件
@@ -68,6 +86,27 @@ class Master
     protected $log;
 
     /**
+     * 工作实例列表
+     *
+     * @var array [$hash => Worker]
+     */
+    protected $workers = [];
+
+    /**
+     * 员工工号（进程号）列表
+     *
+     * @var array [$hash => [$pid => $pid]]
+     */
+    protected $pidMap = [];
+
+    /**
+     * 员工座位（索引）工号对照表
+     *
+     * @var array [$hash => [$seat => $pid]]
+     */
+    protected $seatMap = [];
+
+    /**
      * 初始化运行环境
      *
      * @param Container $container
@@ -78,6 +117,8 @@ class Master
         $this->checkEnv();
 
         $this->container = $container;
+
+        $this->container->singleton(Master::class, $this);
 
         $this->container->single('log');
 
@@ -111,6 +152,8 @@ class Master
         $this->log = $this->container->make(Log::class)->setDir($this->logDir);
 
         $this->setCmdTitle("Chaser：{$this->startFile}");
+
+        $this->initWorkers();
     }
 
     /**
@@ -173,6 +216,51 @@ class Master
             restore_error_handler();
         } elseif (extension_loaded('proctitle') && function_exists('setproctitle')) {
             setproctitle($title);
+        }
+    }
+
+    /**
+     * 初始化工作类
+     */
+    protected function initWorkers()
+    {
+        array_walk($this->requirements, function ($configurations, $remit) {
+            if (key_exists($remit, $this->functions)) {
+                $workerClass = $this->functions[$remit];
+                array_walk($configurations, function ($configuration, $target) use ($workerClass) {
+                    $this->addWorker($this->container->callObject(
+                        [$workerClass, 'settings'],
+                        compact('configuration'),
+                        is_numeric($target) ? [] : compact('target')
+                    ));
+                });
+            }
+        });
+    }
+
+    /**
+     * 添加工作模板
+     *
+     * @param Worker $worker
+     */
+    protected function addWorker($worker)
+    {
+        // 工作标识
+        $hash = spl_object_hash($worker);
+
+        if (key_exists($hash, $this->workers)) {
+            // 重载
+            $worker->reload();
+            // 扩充座位（如不够）
+            $this->seatMap[$hash] = array_pad($this->seatMap[$hash], count($worker), 0);
+        } else {
+            // 初始化
+            $worker->initialize($this);
+            // 记录新职位、初始化工号列表
+            $this->workers[$hash] = $worker;
+            $this->pidMap[$hash] = [];
+            // 初始化座位
+            $this->seatMap[$hash] = array_fill(0, count($worker), 0);
         }
     }
 }
