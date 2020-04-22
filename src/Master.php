@@ -70,6 +70,7 @@ class Master
     /**
      * 初始化运行环境
      *
+     * @param Container $container
      * @param string $profile
      */
     public function __construct(Container $container, string $profile = '')
@@ -108,6 +109,8 @@ class Master
         $this->runtimePath();
 
         $this->log = $this->container->make(Log::class)->setDir($this->logDir);
+
+        $this->setCmdTitle("Chaser：{$this->startFile}");
     }
 
     /**
@@ -154,5 +157,22 @@ class Master
     {
         echo $message, PHP_EOL;
         exit($status);
+    }
+
+    /**
+     * 设置进程标题
+     *
+     * @param string $title
+     */
+    public function setCmdTitle($title)
+    {
+        if (function_exists('cli_set_process_title')) {
+            set_error_handler(function () {
+            });
+            cli_set_process_title($title);
+            restore_error_handler();
+        } elseif (extension_loaded('proctitle') && function_exists('setproctitle')) {
+            setproctitle($title);
+        }
     }
 }
