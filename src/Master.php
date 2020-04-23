@@ -110,19 +110,19 @@ class Master
      * 初始化运行环境
      *
      * @param Container $container
+     * @param Log $log
      * @param string $profile
      */
-    public function __construct(Container $container, string $profile = '')
+    public function __construct(Container $container, Log $log, string $profile = '')
     {
         $this->checkEnv();
 
         $this->container = $container;
+        $this->log = $log;
+        $this->profile = realpath($profile ?: __DIR__ . '/../config.php');
 
         $this->container->singleton(Master::class, $this);
-
-        $this->container->single('log');
-
-        $this->profile = realpath($profile ?: __DIR__ . '/../config.php');
+        $this->container->singleton(Log::class, $log);
 
         $this->initialize();
     }
@@ -155,7 +155,7 @@ class Master
 
         $this->runtimePath();
 
-        $this->log = $this->container->make(Log::class)->setDir($this->logDir);
+        $this->log->setDir($this->logDir);
 
         $this->setCmdTitle("Chaser：{$this->startFile}");
 
