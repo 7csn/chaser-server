@@ -134,8 +134,6 @@ class Master
     {
         PHP_SAPI === 'cli' || $this->quit('only run in command line mode');
         PHP_OS === 'Linux' || $this->quit('only run in Linux platform');
-        extension_loaded('posix') || $this->quit('please ensure POSIX extension are installed');
-        extension_loaded('pcntl') || $this->quit('please ensure PCNTL extension are installed');
     }
 
     /**
