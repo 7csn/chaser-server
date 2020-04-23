@@ -125,6 +125,8 @@ class Master
         $this->container->singleton(Log::class, $log);
 
         $this->initialize();
+
+        set_error_handler([$this, 'errorHandler']);
     }
 
     /**
@@ -268,5 +270,31 @@ class Master
             // 初始化座位
             $this->seatMap[$hash] = array_fill(0, count($worker), 0);
         }
+    }
+
+    /**
+     * 错误处理
+     *
+     * @param int $code
+     * @param string $message
+     * @param string $file
+     * @param int $line
+     */
+    public function errorHandler($code, $message, $file, $line)
+    {
+        $type = 'Other Error';
+        foreach ([
+                     'Fatal Error' => [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR],
+                     'Parse Error' => [E_PARSE],
+                     'Warning' => [E_WARNING, E_CORE_WARNING, E_COMPILE_WARNING, E_USER_WARNING],
+                     'Notice' => [E_NOTICE, E_USER_NOTICE],
+                 ] as $errorType => $errorCode) {
+            if (in_array($code, $errorCode)) {
+                $type = $errorType;
+                break;
+            }
+        }
+        $errorInfo = $type . '：[ ' . $message . ' ][ ' . $file . ' ][ ' . $line . ' ]';
+        $this->log->record($errorInfo, Log::LEVEL_ERROR);
     }
 }
