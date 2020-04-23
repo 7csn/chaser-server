@@ -128,6 +128,14 @@ class Master
     }
 
     /**
+     * 系统运行
+     */
+    public function run()
+    {
+        echo 'running', PHP_EOL;
+    }
+
+    /**
      * 检查运行环境
      */
     protected function checkEnv()
