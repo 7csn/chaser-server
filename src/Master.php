@@ -136,6 +136,7 @@ class Master
     {
         $this->lock();
         $this->parseCommand();
+        $this->inDaemonMode();
     }
 
     /**
@@ -375,5 +376,27 @@ class Master
         } else {
             $this->log->record('Master is stopping ...');
         }
+    }
+
+    /**
+     * 以守护进程方式运行
+     */
+    protected function inDaemonMode()
+    {
+        // 设置临时最大文件权限
+        umask(0);
+
+        // 分叉并退出父进程，让shell认为命令终止不用挂在终端上，摆脱进程组长身份
+        $pid = pcntl_fork();
+        $pid === -1 && $this->quit('daemon mode: fork fail');
+        $pid > 0 && exit(0);
+
+        // 创建（不能是组长）没有控制终端的新会话，并成为组长
+        posix_setsid() === -1 && $this->quit('daemon mode: setSid fail');
+
+        // 再次分叉摆脱组长身份（组长可能会打开控制终端）
+        $pid = pcntl_fork();
+        $pid === -1 && $this->quit('daemon mode: second fork fail');
+        $pid > 0 && exit(0);
     }
 }
