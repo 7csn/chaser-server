@@ -81,4 +81,12 @@ abstract class Worker implements Countable
     {
         return $this->count;
     }
+
+    /**
+     * 开始工作
+     */
+    public function run()
+    {
+
+    }
 }

@@ -536,5 +536,38 @@ class Master
      */
     protected function forkWorker($hash, $worker)
     {
+        // 找出空缺位置
+        $seat = $this->getSeat($hash);
+        if ($seat === false) {
+            return;
+        }
+
+        // 招工（分叉子进程）
+        $pid = pcntl_fork();
+        if ($pid > 0) {
+            $this->pidMap[$hash][$pid] = $pid;
+            $this->seatMap[$hash][$seat] = $pid;
+        } elseif (0 === $pid) {
+            $this->status = static::STATUS_RUNNING;
+            $this->pidMap = [];
+            $this->seatMap = [];
+            $this->workers = [];
+            // 员工工作
+            $worker->run();
+        } else {
+            exit('forkOneWorker fail');
+        }
+    }
+
+    /**
+     * 获取员工座位
+     *
+     * @param int $hash 岗位哈希
+     * @param int $pid 员工工号
+     * @return false|int|string 座号
+     */
+    protected function getSeat($hash, $pid = 0)
+    {
+        return array_search($pid, $this->seatMap[$hash]);
     }
 }
