@@ -176,6 +176,7 @@ class Master
         $this->savePid();
         $this->unlock();
         $this->forkWorkers();
+        $this->monitorWorkers();
     }
 
     /**
@@ -569,5 +570,13 @@ class Master
     protected function getSeat($hash, $pid = 0)
     {
         return array_search($pid, $this->seatMap[$hash]);
+    }
+
+    /**
+     * 监工：维持系统运行
+     */
+    protected function monitorWorkers()
+    {
+        $this->status = static::STATUS_RUNNING;
     }
 }
