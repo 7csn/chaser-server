@@ -137,6 +137,7 @@ class Master
         $this->lock();
         $this->parseCommand();
         $this->inDaemonMode();
+        $this->installSignal();
     }
 
     /**
@@ -398,5 +399,64 @@ class Master
         $pid = pcntl_fork();
         $pid === -1 && $this->quit('daemon mode: second fork fail');
         $pid > 0 && exit(0);
+    }
+
+    /**
+     * 安装信号处理器
+     */
+    protected function installSignal()
+    {
+        // 终止、优雅终止、重载、优雅重载、状态、连接状态
+        $signals = [SIGINT, SIGTERM, SIGUSR1, SIGQUIT, SIGUSR2, SIGIO];
+        foreach ($signals as $signal) {
+            pcntl_signal($signal, [$this, 'signalHandler'], false);
+        }
+        // 忽略 SIG_IGN 信号，防止发送数据到已断开 socket 引起的默认进程终止
+        pcntl_signal(SIGPIPE, SIG_IGN, false);
+    }
+
+    /**
+     * 信号处理程序
+     *
+     * @param int $signal
+     */
+    public function signalHandler($signal)
+    {
+        switch ($signal) {
+            case SIGINT:    // 停止
+                $this->stop(false);
+                break;
+            case SIGTERM:   // 优雅停止
+                $this->stop(true);
+                break;
+            case SIGQUIT:   // 重载
+                $this->reload(false);
+                break;
+            case SIGUSR1:   // 优雅重载
+                $this->reload(true);
+                break;
+            case SIGUSR2:   // 状态
+                break;
+            case SIGIO:     // 连接状态
+                break;
+        }
+    }
+
+    /**
+     * 终止系统运行
+     *
+     * @param bool $graceful 是否优雅关闭
+     */
+    protected function stop($graceful)
+    {
+    }
+
+    /**
+     * 系统重载
+     *
+     * @param bool $graceful 是否优雅关闭
+     */
+    protected function reload($graceful)
+    {
     }
 }
