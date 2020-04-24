@@ -318,7 +318,9 @@ class Master
         $argc = $_SERVER['argc'];
         $argv = $_SERVER['argv'];
 
+        // 命令、模式
         $command = $argc < 2 ? 'start' : $argv[1];
+        $mode = $argc > 2 ? $argv[2] : null;
 
         // 其它运行中的主进程 PID
         $otherPid = $this->getOtherPid();
@@ -329,9 +331,13 @@ class Master
                 $runningPid > 0 && $this->quit('Master already running');
                 break;
             case 'restart':
+                $stopGraceful = $mode === '-g';
+                $this->stopRunningMaster($runningPid, $stopGraceful);
                 break;
             case 'stop':
-                break;
+                $stopGraceful = $mode === '-g';
+                $this->stopRunningMaster($runningPid, $stopGraceful);
+                exit(0);
             case 'reload':
                 break;
             case 'status':
@@ -352,5 +358,22 @@ class Master
     {
         $pid = is_file($this->pidFile) ? (int)file_get_contents($this->pidFile) : 0;
         return posix_getpid() === $pid ? 0 : $pid;
+    }
+
+    /**
+     * 指令：停止正运行的系统
+     *
+     * @param int $pid 活跃系统主进程号
+     * @param bool $graceful 是否优雅关闭
+     */
+    protected function stopRunningMaster($pid, $graceful)
+    {
+        $pid > 0 || $this->quit('Master not run');
+
+        if ($graceful) {
+            $this->log->record('Master is gracefully stopping ...');
+        } else {
+            $this->log->record('Master is stopping ...');
+        }
     }
 }
