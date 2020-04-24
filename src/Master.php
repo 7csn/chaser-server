@@ -138,6 +138,7 @@ class Master
         $this->parseCommand();
         $this->inDaemonMode();
         $this->installSignal();
+        $this->savePid();
     }
 
     /**
@@ -458,5 +459,13 @@ class Master
      */
     protected function reload($graceful)
     {
+    }
+
+    /**
+     * 保存 PID
+     */
+    protected function savePid()
+    {
+        file_put_contents($this->pidFile, posix_getpid()) || $this->quit("Can not save pid to $this->pidFile");
     }
 }
