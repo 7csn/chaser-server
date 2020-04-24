@@ -140,6 +140,7 @@ class Master
         $this->installSignal();
         $this->savePid();
         $this->unlock();
+        $this->forkWorkers();
     }
 
     /**
@@ -477,5 +478,28 @@ class Master
     {
         $fd = fopen($this->startFile, 'r');
         $fd && flock($fd, LOCK_UN);
+    }
+
+    /**
+     * 批量招工
+     */
+    protected function forkWorkers()
+    {
+        array_walk($this->workers, function ($worker, $hash) {
+            $count = count($worker);
+            while (count($this->pidMap[$hash]) < $count) {
+                $this->forkWorker($hash, $worker);
+            }
+        });
+    }
+
+    /**
+     * 招工
+     *
+     * @param string $hash
+     * @param Worker $worker
+     */
+    protected function forkWorker($hash, $worker)
+    {
     }
 }
