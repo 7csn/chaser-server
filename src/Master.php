@@ -134,7 +134,7 @@ class Master
      */
     public function run()
     {
-        echo 'running', PHP_EOL;
+        $this->lock();
     }
 
     /**
@@ -296,5 +296,16 @@ class Master
         }
         $errorInfo = $type . '：[ ' . $message . ' ][ ' . $file . ' ][ ' . $line . ' ]';
         $this->log->record($errorInfo, Log::LEVEL_ERROR);
+    }
+
+    /**
+     * 锁定启动文件
+     */
+    protected function lock()
+    {
+        $fd = fopen($this->startFile, 'r');
+        if (!$fd || !flock($fd, LOCK_EX)) {
+            $this->quit('Master already running');
+        }
     }
 }
