@@ -14,6 +14,41 @@ use chaser\server\worker\Worker;
 class Master
 {
     /**
+     * 状态：准备中
+     *
+     * @var int
+     */
+    const STATUS_STARTING = 1;
+
+    /**
+     * 状态：运行中
+     *
+     * @var int
+     */
+    const STATUS_RUNNING = 2;
+
+    /**
+     * 状态：即将终止
+     *
+     * @var int
+     */
+    const STATUS_SHUTDOWN = 3;
+
+    /**
+     * 状态：正在重载
+     *
+     * @var int
+     */
+    const STATUS_RELOADING = 4;
+
+    /**
+     * 当前进程状态
+     *
+     * @var int
+     */
+    protected $status = self::STATUS_STARTING;
+
+    /**
      * IoC 容器
      *
      * @var Container
