@@ -135,6 +135,7 @@ class Master
     public function run()
     {
         $this->lock();
+        $this->parseCommand();
     }
 
     /**
@@ -306,6 +307,34 @@ class Master
         $fd = fopen($this->startFile, 'r');
         if (!$fd || !flock($fd, LOCK_EX)) {
             $this->quit('Master already running');
+        }
+    }
+
+    /**
+     * 解析命令
+     */
+    protected function parseCommand()
+    {
+        $argc = $_SERVER['argc'];
+        $argv = $_SERVER['argv'];
+
+        $command = $argc < 2 ? 'start' : $argv[1];
+
+        switch ($command) {
+            case 'start':
+                break;
+            case 'restart':
+                break;
+            case 'stop':
+                break;
+            case 'reload':
+                break;
+            case 'status':
+                break;
+            case 'connections':
+                break;
+            default:
+                $this->quit("Unknown command:$command");
         }
     }
 }
