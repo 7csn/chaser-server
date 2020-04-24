@@ -139,6 +139,7 @@ class Master
         $this->inDaemonMode();
         $this->installSignal();
         $this->savePid();
+        $this->unlock();
     }
 
     /**
@@ -467,5 +468,14 @@ class Master
     protected function savePid()
     {
         file_put_contents($this->pidFile, posix_getpid()) || $this->quit("Can not save pid to $this->pidFile");
+    }
+
+    /**
+     * 启动文件解锁
+     */
+    protected function unlock()
+    {
+        $fd = fopen($this->startFile, 'r');
+        $fd && flock($fd, LOCK_UN);
     }
 }
