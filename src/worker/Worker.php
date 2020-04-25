@@ -27,6 +27,13 @@ abstract class Worker implements Countable
     protected $count = 1;
 
     /**
+     * 监听网络
+     *
+     * @var string
+     */
+    protected $listening = 'none';
+
+    /**
      * 职权范围
      *
      * @return string
