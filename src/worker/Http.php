@@ -7,7 +7,7 @@ namespace chaser\server\worker;
  *
  * @package chaser\server\worker
  */
-class Http extends Protocol
+class Http extends Tcp
 {
     /**
      * 职权范围
@@ -17,19 +17,5 @@ class Http extends Protocol
     public static function remit()
     {
         return 'http';
-    }
-
-    /**
-     * 通讯协议
-     *
-     * @return string
-     */
-    protected static function transport()
-    {
-        return 'tcp';
-    }
-
-    public function reload()
-    {
     }
 }

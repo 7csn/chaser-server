@@ -2,6 +2,8 @@
 
 namespace chaser\server\worker;
 
+use chaser\container\Container;
+use chaser\server\Log;
 use chaser\server\Master;
 
 /**
@@ -137,7 +139,8 @@ abstract class Protocol extends Worker
             if ($this->reusePort) {
                 stream_context_set_option($this->context, 'socket', 'so_reuseport', 1);
             }
-            $this->socket = stream_socket_server($this->listening, $this->errorNumber, $this->errorMessage, $this->flags, $this->context);
+            $this->socket = stream_socket_server($this->listening, $this->errorNumber, $this->errorMessage,
+                $this->flags, $this->context);
             if ($this->socket) {
                 $this->socketSettings();
             } else {
@@ -196,6 +199,7 @@ abstract class Protocol extends Worker
      */
     public function __destruct()
     {
+        Container::getInstance()->make(Log::class)->record($this->listening);
         $this->unListen();
     }
 }

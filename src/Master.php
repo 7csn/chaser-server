@@ -552,6 +552,9 @@ class Master
             $this->status = static::STATUS_RUNNING;
             $this->pidMap = [];
             $this->seatMap = [];
+            foreach ($this->workers as $_hash => $_worker) {
+                $_hash === $hash || $_worker->__destruct();
+            }
             $this->workers = [];
             // 员工工作
             $worker->run();
