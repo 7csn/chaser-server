@@ -51,8 +51,4 @@ class Tcp extends Protocol
     public function connect($socket)
     {
     }
-
-    public function reload()
-    {
-    }
 }

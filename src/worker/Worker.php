@@ -49,18 +49,18 @@ abstract class Worker implements Countable
     protected $reactor;
 
     /**
+     * 员工是否正离职
+     *
+     * @var bool
+     */
+    protected $stopping = false;
+
+    /**
      * 职权范围
      *
      * @return string
      */
     abstract public static function remit();
-
-    /**
-     * 重载配置事件
-     *
-     * @return mixed
-     */
-    abstract public function reload();
 
     /**
      * 添加管理
@@ -103,6 +103,11 @@ abstract class Worker implements Countable
      */
     public function stop()
     {
+        if (!$this->stopping) {
+            // 关闭资源
+
+            $this->stopping = true;
+        }
         exit(0);
     }
 

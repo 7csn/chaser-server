@@ -97,6 +97,7 @@ abstract class Protocol extends Worker
      * @param string $target
      * @param array $options
      * @param bool $reusePort
+     * @param string $name
      * @param int $count
      */
     public function __construct(
@@ -124,6 +125,16 @@ abstract class Protocol extends Worker
 
         // 端口不复用，监听网络继承（子进程继承父进程工作模板）
         ($this->reusePort = $reusePort) || $this->listen();
+    }
+
+    /**
+     * 开始工作
+     */
+    public function run()
+    {
+        $this->reusePort && $this->listen();
+
+        parent::run();
     }
 
     /**
