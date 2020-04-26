@@ -2,7 +2,6 @@
 
 namespace chaser\server\worker;
 
-
 class Tcp extends Protocol
 {
     /**
@@ -42,6 +41,15 @@ class Tcp extends Protocol
             restore_error_handler();
         }
         parent::socketSettings();
+    }
+
+    /**
+     * 产生新连接
+     *
+     * @param resource $socket 流
+     */
+    public function connect($socket)
+    {
     }
 
     public function reload()

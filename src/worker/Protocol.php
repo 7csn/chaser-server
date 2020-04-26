@@ -83,6 +83,13 @@ abstract class Protocol extends Worker
     abstract protected static function transport();
 
     /**
+     * 接收新连接
+     *
+     * @param resource $socket
+     */
+    abstract public function connect($socket);
+
+    /**
      * 构造函数
      *
      * @param Master $master
@@ -175,7 +182,8 @@ abstract class Protocol extends Worker
     protected function resumeAccept()
     {
         if (!$this->acceptConnection && $this->socket) {
-
+            // 添加新连接事件
+            $this->reactor->add($this->socket, Reactor::EV_READ, [$this, 'connect']);
             $this->acceptConnection = true;
         }
     }
@@ -186,7 +194,8 @@ abstract class Protocol extends Worker
     protected function pauseAccept()
     {
         if ($this->acceptConnection && $this->socket) {
-
+            // 移除新连接事件
+            $this->reactor->del($this->socket, Reactor::EV_READ);
             $this->acceptConnection = false;
         }
     }
