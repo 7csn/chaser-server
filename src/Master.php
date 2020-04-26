@@ -278,11 +278,10 @@ class Master
             if (key_exists($remit, $this->functions)) {
                 $workerClass = $this->functions[$remit];
                 array_walk($configurations, function ($configuration, $target) use ($workerClass) {
-                    $this->addWorker($this->container->callObject(
-                        [$workerClass, 'settings'],
-                        compact('configuration'),
-                        is_numeric($target) ? [] : compact('target')
-                    ));
+                    if (!is_numeric($target)) {
+                        $configuration['target'] = $target;
+                    }
+                    $this->addWorker($this->container->make($workerClass, $configuration));
                 });
             }
         });
@@ -293,25 +292,17 @@ class Master
      *
      * @param Worker $worker
      */
-    protected function addWorker($worker)
+    public function addWorker(Worker $worker)
     {
         // 工作标识
         $hash = spl_object_hash($worker);
 
-        if (key_exists($hash, $this->workers)) {
-            // 重载
-            $worker->reload();
-            // 扩充座位（如不够）
-            $this->seatMap[$hash] = array_pad($this->seatMap[$hash], count($worker), 0);
-        } else {
-            // 初始化
-            $worker->initialize($this);
-            // 记录新职位、初始化工号列表
-            $this->workers[$hash] = $worker;
-            $this->pidMap[$hash] = [];
-            // 初始化座位
-            $this->seatMap[$hash] = array_fill(0, count($worker), 0);
-        }
+        // 记录新职位、初始化工号列表
+        $this->workers[$hash] = $worker;
+        $this->pidMap[$hash] = [];
+
+        // 初始化座位
+        $this->seatMap[$hash] = array_fill(0, count($worker), 0);
     }
 
     /**
@@ -558,6 +549,7 @@ class Master
             $this->workers = [];
             // 员工工作
             $worker->run();
+            die;
         } else {
             exit('forkOneWorker fail');
         }

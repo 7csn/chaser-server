@@ -65,21 +65,6 @@ abstract class Worker implements Countable
     }
 
     /**
-     * 批量配置属性
-     *
-     * @param array $settings 配置数组
-     * @return $this
-     */
-    public function settings(array $settings = [])
-    {
-        array_walk($settings, function ($value, $name) {
-            $this->{$name} = $value;
-        });
-
-        return $this;
-    }
-
-    /**
      * 职员数量
      *
      * @return int
@@ -94,6 +79,5 @@ abstract class Worker implements Countable
      */
     public function run()
     {
-
     }
 }

@@ -87,13 +87,15 @@ abstract class Protocol extends Worker
      * @param Master $master
      * @param string $target
      */
-    public function __construct(Master $master, string $target, array $options = [], bool $reusePort = false)
+    public function __construct(Master $master, string $target, array $options = [], bool $reusePort = false, int $count = 1)
     {
         parent::__construct($master);
 
         $this->target = $target;
 
         $this->listening = $this->transport() . '://' . $this->target;
+
+        $this->count = $count;
 
         // 创建上下文绑定
         if (empty($options['socket']['backlog'])) {
