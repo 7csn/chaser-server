@@ -88,6 +88,14 @@ abstract class Worker implements Countable
     }
 
     /**
+     * 终止工作
+     */
+    public function stop()
+    {
+        exit(0);
+    }
+
+    /**
      * 信号处理程序
      *
      * @param int $signal
@@ -99,6 +107,7 @@ abstract class Worker implements Countable
             case SIGTERM:   // 优雅停止
             case SIGQUIT:   // 重载
             case SIGUSR1:   // 优雅重载
+                $this->stop();
                 break;
             case SIGUSR2:   // 状态
                 break;

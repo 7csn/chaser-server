@@ -16,6 +16,11 @@ use chaser\server\worker\Worker;
 class Master
 {
     /**
+     * 强关系统时限（秒）
+     */
+    const STOP_FORCEFUL_TIMEOUT = 5;
+
+    /**
      * 状态：准备中
      *
      * @var int
@@ -372,7 +377,10 @@ class Master
                 $this->stopRunningMaster($runningPid, $stopGraceful);
                 exit(0);
             case 'reload':
-                break;
+                $runningPid > 0 || $this->quit('Master not run');
+                $sig = $mode === '-g' ? SIGQUIT : SIGUSR1;
+                posix_kill($runningPid, $sig);
+                exit(0);
             case 'status':
                 break;
             case 'connections':
@@ -404,10 +412,34 @@ class Master
         $pid > 0 || $this->quit('Master not run');
 
         if ($graceful) {
+            $sig = SIGTERM;
             Log::record('Master is gracefully stopping ...');
         } else {
+            $sig = SIGINT;
             Log::record('Master is stopping ...');
         }
+
+        // 给运行中的系统发送终止信号
+        posix_kill($pid, $sig);
+
+        // 询问系统关闭情况时限
+        $limitTime = time() + self::STOP_FORCEFUL_TIMEOUT;
+
+        // 强行关闭，不断询问结果
+        if (!$graceful) {
+            while (posix_kill($pid, 0)) {
+                // 超时，视为关闭失败
+                if (time() >= $limitTime) {
+                    Log::record('Master stop fail');
+                    exit;
+                }
+                // 等待 10 毫秒
+                usleep(10000);
+            }
+        }
+
+        // 发送信号失败，视为关闭成功
+        Log::record('Master stop success');
     }
 
     /**
@@ -476,10 +508,22 @@ class Master
     /**
      * 终止系统运行
      *
-     * @param bool $graceful 是否优雅关闭
+     * @param bool $graceful
      */
-    protected function stop($graceful)
+    protected function stop(bool $graceful)
     {
+        $this->status = static::STATUS_SHUTDOWN;
+
+        Log::record('Master stopping ...');
+
+        $sig = $graceful ? SIGTERM : SIGINT;
+
+        array_walk($this->pidMap, function ($pidMap) use ($sig) {
+            array_walk($pidMap, function ($pid) use ($sig) {
+                posix_kill($pid, $sig);
+                // 询问结果
+            });
+        });
     }
 
     /**
@@ -487,8 +531,30 @@ class Master
      *
      * @param bool $graceful 是否优雅关闭
      */
-    protected function reload($graceful)
+    protected function reload(bool $graceful)
     {
+        if ($this->status === self::STATUS_RUNNING) {
+
+            $this->status = self::STATUS_RELOADING;
+
+            Log::record('Master reloading...');
+
+            $this->initialize();
+
+            // 系统重载事件
+
+            $sig = $graceful ? SIGQUIT : SIGUSR1;
+
+            foreach ($this->pidMap as $pidMap) {
+                foreach ($pidMap as $pid) {
+                    posix_kill($pid, $sig);
+                }
+            }
+
+            $this->status = self::STATUS_RUNNING;
+
+            Log::record('Master has been reloaded');
+        }
     }
 
     /**
