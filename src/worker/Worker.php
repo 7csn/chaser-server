@@ -94,6 +94,8 @@ abstract class Worker implements Countable
         $this->master->setCmdTitle("Chaser[{$this->remit()}]：$this->listening");
 
         $this->reinstallSignal();
+
+        $this->reactor->loop();
     }
 
     /**

@@ -100,11 +100,18 @@ class Master
     ];
 
     /**
-     * 启动文件
+     * 启动文件名
      *
      * @var string
      */
     protected $startFile;
+
+    /**
+     * 启动文件别名
+     *
+     * @var string
+     */
+    protected $startName;
 
     /**
      * 主进程 PID 存储文件
@@ -165,6 +172,10 @@ class Master
         $this->container->single(Reactor::class);
         $this->container->concretes(Select::class, Reactor::class);
 
+        $this->startPath();
+
+        $this->parseCommand();
+
         $this->initialize();
 
         set_error_handler([$this, 'errorHandler']);
@@ -176,7 +187,6 @@ class Master
     public function run()
     {
         $this->lock();
-        $this->parseCommand();
         $this->inDaemonMode();
         $this->installSignal();
         $this->savePid();
@@ -195,6 +205,22 @@ class Master
     }
 
     /**
+     * 启动文件别名路径
+     */
+    protected function startPath()
+    {
+        // 获取启动文件路径
+        $backtrace = debug_backtrace();
+        $this->startFile = end($backtrace)['file'];
+
+        // 启动文件路径标记
+        $this->startName = str_replace(['/', '\\', '.'], '_', $this->startFile);
+
+        // 主进程 PID 保存文件
+        $this->pidFile = realpath(__DIR__ . '/../storage') . DIRECTORY_SEPARATOR . $this->startName . '.pid';
+    }
+
+    /**
      * 加载配置
      */
     protected function initialize()
@@ -203,7 +229,7 @@ class Master
 
         date_default_timezone_set($this->timezone);
 
-        $this->runtimePath();
+        $this->logPath();
 
         Log::setDir($this->logDir);
 
@@ -223,27 +249,17 @@ class Master
     }
 
     /**
-     * 初始化运行目录文件路径
+     * 初始化日志目录
      */
-    protected function runtimePath()
+    protected function logPath()
     {
         // 初始化存储目录
         $this->storageDir = realpath($this->storageDir ?: __DIR__ . '/../storage') . DIRECTORY_SEPARATOR;
         is_dir($this->storageDir) || mkdir($this->storageDir, 0777);
 
-        // 获取启动文件路径
-        $backtrace = debug_backtrace();
-        $this->startFile = end($backtrace)['file'];
-
-        // 启动文件路径标记
-        $name = str_replace(['/', '\\', '.'], '_', $this->startFile);
-
         // 初始化日志目录
-        $this->logDir = $this->storageDir . $name . DIRECTORY_SEPARATOR;
+        $this->logDir = $this->storageDir . $this->startName . DIRECTORY_SEPARATOR;
         is_dir($this->logDir) || mkdir($this->logDir, 0777);
-
-        // 主进程 PID 保存文件
-        $this->pidFile = $this->storageDir . $name . '.pid';
     }
 
     /**
