@@ -82,5 +82,6 @@ abstract class Worker implements Countable
      */
     public function run()
     {
+        $this->master->setCmdTitle("Chaser[{$this->remit()}]：$this->listening");
     }
 }
