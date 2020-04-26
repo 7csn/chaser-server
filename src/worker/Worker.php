@@ -28,6 +28,13 @@ abstract class Worker implements Countable
     protected $count = 1;
 
     /**
+     * 岗位名称
+     *
+     * @var string
+     */
+    protected $name;
+
+    /**
      * 监听网络
      *
      * @var string
@@ -60,11 +67,13 @@ abstract class Worker implements Countable
      *
      * @param Master $master
      * @param Reactor $reactor
+     * @param string $name
      */
-    public function __construct(Master $master, Reactor $reactor)
+    public function __construct(Master $master, Reactor $reactor, string $name = 'none')
     {
         $this->master = $master;
         $this->reactor = $reactor;
+        $this->name = $name;
     }
 
     /**

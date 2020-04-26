@@ -382,8 +382,10 @@ class Master
                 posix_kill($runningPid, $sig);
                 exit(0);
             case 'status':
+                $runningPid > 0 || $this->quit('Master not run');
                 break;
             case 'connections':
+                $runningPid > 0 || $this->quit('Master not run');
                 break;
             default:
                 $this->quit("Unknown command:$command");
@@ -640,5 +642,79 @@ class Master
     protected function monitorWorkers()
     {
         $this->status = static::STATUS_RUNNING;
+
+        while (1) {
+            // 调用信号处理程序
+            pcntl_signal_dispatch();
+
+            // 挂起，直到子进程退出且其状态未报告，或接收到信号
+            $status = 0;
+            $pid = pcntl_wait($status, WUNTRACED);
+
+            // 调用信号处理程序
+            pcntl_signal_dispatch();
+
+            // 若有子进程退出（员工离职）
+            if ($pid > 0) {
+                foreach ($this->pidMap as $hash => $pidMap) {
+                    // 找出员工
+                    if (key_exists($pid, $pidMap)) {
+                        // 异常退出日志
+                        if ($status !== 0) {
+                            Log::record("worker [{$this->workers[$hash]->name}:$pid] exit with status $status");
+                        }
+                        // 清除员工工号、置空工位
+                        unset($this->pidMap[$hash][$pid]);
+                        $this->seatMap[$hash][$this->getSeat($hash, $pid)] = 0;
+                        break;
+                    }
+                }
+
+                // 若主程序依然运行，分叉新的子进程
+                if ($this->status !== static::STATUS_SHUTDOWN) {
+                    $this->forkWorkers();
+                }
+            }
+
+            // 若状态为即将终止，则清退程序
+            if ($this->status === static::STATUS_SHUTDOWN && !$this->getPidList()) {
+                $this->quitCleanly();
+            }
+        }
+    }
+
+    /**
+     * 退出当前进程
+     */
+    protected function quitCleanly()
+    {
+        @unlink($this->pidFile);
+        Log::record('Master has been stopped');
+        exit(0);
+    }
+
+    /**
+     * 返回员工工号列表
+     *
+     * @return array [pid => pid]
+     */
+    protected function getPidList()
+    {
+        return array_reduce($this->pidMap, function ($pidMap, $pidList) {
+            return array_merge($pidMap, $pidList);
+        }, []);
+    }
+
+    /**
+     * 判断当前系统是否支持端口复用
+     *
+     * @return bool|null
+     */
+    public function reusePort()
+    {
+        preg_match('/version ([\d\.]+)/', exec("cat /proc/version"), $match);
+        return isset($match[1])
+            ? version_compare($match[1], 3.9) ? true : false
+            : null;
     }
 }

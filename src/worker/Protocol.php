@@ -105,6 +105,7 @@ abstract class Protocol extends Worker
         string $target,
         array $options = [],
         bool $reusePort = false,
+        string $name = 'none',
         int $count = 1
     ) {
         parent::__construct($master, $reactor);
