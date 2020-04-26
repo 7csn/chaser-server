@@ -5,6 +5,7 @@ namespace chaser\server\worker;
 use chaser\container\Container;
 use chaser\server\Log;
 use chaser\server\Master;
+use chaser\server\reactor\Reactor;
 
 /**
  * 基于网络传输协议的抽象工作类
@@ -85,11 +86,21 @@ abstract class Protocol extends Worker
      * 构造函数
      *
      * @param Master $master
+     * @param Reactor $reactor
      * @param string $target
+     * @param array $options
+     * @param bool $reusePort
+     * @param int $count
      */
-    public function __construct(Master $master, string $target, array $options = [], bool $reusePort = false, int $count = 1)
-    {
-        parent::__construct($master);
+    public function __construct(
+        Master $master,
+        Reactor $reactor,
+        string $target,
+        array $options = [],
+        bool $reusePort = false,
+        int $count = 1
+    ) {
+        parent::__construct($master, $reactor);
 
         $this->target = $target;
 
@@ -105,13 +116,6 @@ abstract class Protocol extends Worker
 
         // 端口不复用，监听网络继承（子进程继承父进程工作模板）
         ($this->reusePort = $reusePort) || $this->listen();
-    }
-
-    /**
-     * 初始化
-     */
-    public function initialize()
-    {
     }
 
     /**
@@ -201,7 +205,6 @@ abstract class Protocol extends Worker
      */
     public function __destruct()
     {
-        Container::getInstance()->make(Log::class)->record($this->listening);
         $this->unListen();
     }
 }

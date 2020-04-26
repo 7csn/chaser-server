@@ -3,6 +3,7 @@
 namespace chaser\server\worker;
 
 use chaser\server\Master;
+use chaser\server\reactor\Reactor;
 use Countable;
 
 /**
@@ -34,18 +35,18 @@ abstract class Worker implements Countable
     protected $listening = 'none';
 
     /**
+     * 全局事件反应器
+     *
+     * @var Reactor
+     */
+    protected $reactor;
+
+    /**
      * 职权范围
      *
      * @return string
      */
     abstract public static function remit();
-
-    /**
-     * 初始化
-     *
-     * @return mixed
-     */
-    abstract public function initialize();
 
     /**
      * 重载配置事件
@@ -58,10 +59,12 @@ abstract class Worker implements Countable
      * 添加管理
      *
      * @param Master $master
+     * @param Reactor $reactor
      */
-    public function __construct(Master $master)
+    public function __construct(Master $master, Reactor $reactor)
     {
         $this->master = $master;
+        $this->reactor = $reactor;
     }
 
     /**

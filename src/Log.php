@@ -60,7 +60,7 @@ class Log
      *
      * @var string
      */
-    protected $dir;
+    protected static $dir;
 
     /**
      * 设置目录
@@ -68,11 +68,9 @@ class Log
      * @param string $dir
      * @return $this
      */
-    public function setDir(string $dir)
+    public static function setDir(string $dir)
     {
-        $this->dir = $dir;
-
-        return $this;
+        self::$dir = $dir;
     }
 
     /**
@@ -81,12 +79,12 @@ class Log
      * @param string $message 日志信息
      * @param int $level 日志级别
      */
-    public function record(string $message, int $level = self::LEVEL_DEBUG)
+    public static function record(string $message, int $level = self::LEVEL_DEBUG)
     {
         // 补充时间
-        $message = $this->getDatetime() . ' | ' . $this->getLevelName($level) . ' | ' . $message . PHP_EOL;
+        $message = self::getDatetime() . ' | ' . self::getLevelName($level) . ' | ' . $message . PHP_EOL;
         // 记录日志
-        file_put_contents($this->dir . date('Y-m-d') . '.log', $message, FILE_APPEND | LOCK_EX);
+        file_put_contents(self::$dir . date('Y-m-d') . '.log', $message, FILE_APPEND | LOCK_EX);
     }
 
     /**
@@ -94,7 +92,7 @@ class Log
      *
      * @return string
      */
-    protected function getDatetime()
+    protected static function getDatetime()
     {
         return date('H:i:s') . '.' . str_pad(substr(microtime(true), 11), 6, '0');
     }
@@ -105,7 +103,7 @@ class Log
      * @param int $level 级别
      * @return string
      */
-    protected function getLevelName(int $level)
+    protected static function getLevelName(int $level)
     {
         return self::LEVEL_NAMES[$level] ?? self::LEVEL_NAMES[self::LEVEL_DEBUG];
     }

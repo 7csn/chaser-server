@@ -3,6 +3,8 @@
 namespace chaser\server;
 
 use chaser\container\Container;
+use chaser\server\reactor\Reactor;
+use chaser\server\reactor\Select;
 use chaser\server\worker\Http;
 use chaser\server\worker\Worker;
 
@@ -145,19 +147,18 @@ class Master
      * 初始化运行环境
      *
      * @param Container $container
-     * @param Log $log
      * @param string $profile
      */
-    public function __construct(Container $container, Log $log, string $profile = '')
+    public function __construct(Container $container, string $profile = '')
     {
         $this->checkEnv();
 
         $this->container = $container;
-        $this->log = $log;
         $this->profile = realpath($profile ?: __DIR__ . '/../config.php');
 
         $this->container->singleton(Master::class, $this);
-        $this->container->singleton(Log::class, $log);
+        $this->container->single(Reactor::class);
+        $this->container->concretes(Select::class, Reactor::class);
 
         $this->initialize();
 
@@ -199,7 +200,7 @@ class Master
 
         $this->runtimePath();
 
-        $this->log->setDir($this->logDir);
+        Log::setDir($this->logDir);
 
         $this->setCmdTitle("Chaser：{$this->startFile}");
 
@@ -328,7 +329,7 @@ class Master
             }
         }
         $errorInfo = $type . '：[ ' . $message . ' ][ ' . $file . ' ][ ' . $line . ' ]';
-        $this->log->record($errorInfo, Log::LEVEL_ERROR);
+        Log::record($errorInfo, Log::LEVEL_ERROR);
     }
 
     /**
@@ -403,9 +404,9 @@ class Master
         $pid > 0 || $this->quit('Master not run');
 
         if ($graceful) {
-            $this->log->record('Master is gracefully stopping ...');
+            Log::record('Master is gracefully stopping ...');
         } else {
-            $this->log->record('Master is stopping ...');
+            Log::record('Master is stopping ...');
         }
     }
 
