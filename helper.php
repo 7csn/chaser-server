@@ -47,3 +47,34 @@ if (!function_exists('chaserPortReused')) {
             : null;
     }
 }
+
+if (!function_exists('chaserIgnoreErrorCall')) {
+    /**
+     * （忽略错误）执行调用
+     *
+     * @param callable $name
+     * @param array ...$args
+     * @return mixed
+     */
+    function chaserIgnoreErrorCall($name, ...$args)
+    {
+        set_error_handler(function () {
+        });
+        $result = call_user_func_array($name, $args);
+        restore_error_handler();
+        return $result;
+    }
+}
+
+if (!function_exists('chaserDatetime')) {
+    /**
+     * 获取当前精确日期时间
+     *
+     * @param int $decimals
+     * @return string
+     */
+    function chaserDatetime($decimals = 4)
+    {
+        return date('H:i:s') . '.' . str_pad(substr(microtime(true), 11), $decimals, '0');
+    }
+}

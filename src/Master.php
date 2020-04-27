@@ -121,20 +121,6 @@ class Master
     protected $pidFile;
 
     /**
-     * 日志目录
-     *
-     * @var string
-     */
-    protected $logDir;
-
-    /**
-     * 日志对象
-     *
-     * @var Log
-     */
-    protected $log;
-
-    /**
      * 工作实例列表
      *
      * @var array [$hash => Worker]
@@ -168,7 +154,6 @@ class Master
         $this->container = $container;
         $this->profile = realpath($profile ?: __DIR__ . '/../config.php');
 
-        $this->container->singleton(Master::class, $this);
         $this->container->single(Reactor::class);
         $this->container->concretes(Select::class, Reactor::class);
 
@@ -231,8 +216,6 @@ class Master
 
         $this->logPath();
 
-        Log::setDir($this->logDir);
-
         chaserSetCmdTitle("Chaser：{$this->startFile}");
 
         $this->initWorkers();
@@ -255,11 +238,11 @@ class Master
     {
         // 初始化存储目录
         $this->storageDir = realpath($this->storageDir ?: __DIR__ . '/../storage') . DIRECTORY_SEPARATOR;
-        is_dir($this->storageDir) || mkdir($this->storageDir, 0777);
 
         // 初始化日志目录
-        $this->logDir = $this->storageDir . $this->startName . DIRECTORY_SEPARATOR;
-        is_dir($this->logDir) || mkdir($this->logDir, 0777);
+        $logDir = $this->storageDir . $this->startName . DIRECTORY_SEPARATOR;
+        is_dir($logDir) || mkdir($logDir, 0777);
+        Log::setDir($logDir);
     }
 
     /**
@@ -399,6 +382,8 @@ class Master
     protected function stopRunningMaster($pid, $graceful)
     {
         $pid > 0 || chaserExit('Master not run');
+
+        $this->logPath();
 
         if ($graceful) {
             $sig = SIGTERM;

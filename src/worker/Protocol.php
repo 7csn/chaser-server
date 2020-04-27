@@ -2,9 +2,6 @@
 
 namespace chaser\server\worker;
 
-use chaser\container\Container;
-use chaser\server\Log;
-use chaser\server\Master;
 use chaser\server\reactor\Reactor;
 
 /**
@@ -87,7 +84,7 @@ abstract class Protocol extends Worker
      *
      * @param resource $socket
      */
-    abstract public function connect($socket);
+    abstract public function acceptConnection($socket);
 
     /**
      * 构造函数
@@ -107,7 +104,7 @@ abstract class Protocol extends Worker
         string $name = 'none',
         int $count = 1
     ) {
-        parent::__construct($reactor);
+        parent::__construct($reactor, $name);
 
         $this->target = $target;
 
@@ -193,7 +190,7 @@ abstract class Protocol extends Worker
     {
         if (!$this->acceptConnection && $this->socket) {
             // 添加新连接事件
-            $this->reactor->add($this->socket, Reactor::EV_READ, [$this, 'connect']);
+            $this->reactor->add($this->socket, Reactor::EV_READ, [$this, 'acceptConnection']);
             $this->acceptConnection = true;
         }
     }

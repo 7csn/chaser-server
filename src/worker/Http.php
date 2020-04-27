@@ -2,6 +2,8 @@
 
 namespace chaser\server\worker;
 
+use chaser\server\connection\Http as HttpConnection;
+
 /**
  * 基于 http 协议的工作类
  *
@@ -17,5 +19,17 @@ class Http extends Tcp
     public static function remit()
     {
         return 'http';
+    }
+
+    /**
+     * 获取客户端连接对
+     *
+     * @param resource $socket
+     * @param string $peerName
+     * @return HttpConnection
+     */
+    protected function getConnection($socket, $peerName)
+    {
+        return new HttpConnection($this, $socket, $peerName);
     }
 }

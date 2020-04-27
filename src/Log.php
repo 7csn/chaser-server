@@ -82,19 +82,9 @@ class Log
     public static function record(string $message, int $level = self::LEVEL_DEBUG)
     {
         // 补充时间
-        $message = self::getDatetime() . ' | ' . self::getLevelName($level) . ' | ' . $message . PHP_EOL;
+        $message = chaserDatetime() . ' | ' . self::getLevelName($level) . ' | ' . $message . PHP_EOL;
         // 记录日志
         file_put_contents(self::$dir . date('Y-m-d') . '.log', $message, FILE_APPEND | LOCK_EX);
-    }
-
-    /**
-     * 获取当前精确时间
-     *
-     * @return string
-     */
-    protected static function getDatetime()
-    {
-        return date('H:i:s') . '.' . str_pad(substr(microtime(true), 11), 6, '0');
     }
 
     /**

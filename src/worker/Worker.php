@@ -2,7 +2,6 @@
 
 namespace chaser\server\worker;
 
-use chaser\server\Master;
 use chaser\server\reactor\Reactor;
 use Countable;
 
@@ -58,7 +57,6 @@ abstract class Worker implements Countable
     /**
      * 添加管理
      *
-     * @param Master $master
      * @param Reactor $reactor
      * @param string $name
      */

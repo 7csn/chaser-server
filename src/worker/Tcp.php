@@ -2,8 +2,17 @@
 
 namespace chaser\server\worker;
 
+use chaser\server\connection\Tcp as TcpConnection;
+
 class Tcp extends Protocol
 {
+    /**
+     * 接收连接对象数组
+     *
+     * @var array
+     */
+    protected $connections = [];
+
     /**
      * 职权范围
      *
@@ -48,7 +57,36 @@ class Tcp extends Protocol
      *
      * @param resource $socket 流
      */
-    public function connect($socket)
+    public function acceptConnection($socket)
     {
+        $connection = $this->getConnection(...$this->acceptSocket($socket));
+//        $this->connections[$connection->id] = $connection;
+    }
+
+    /**
+     * 获取客户端连接对象
+     *
+     * @param resource $socket
+     * @param string $peerName
+     * @return TcpConnection
+     */
+    protected function getConnection($socket, $peerName)
+    {
+        return new TcpConnection($this, $socket, $peerName);
+    }
+
+    /**
+     * 接收流资源信息
+     *
+     * @param resource $socket
+     * @return array
+     */
+    protected function acceptSocket(resource $socket)
+    {
+        set_error_handler(function () {
+        });
+        $acceptSocket = stream_socket_accept($socket, 0, $peerName);
+        restore_error_handler();
+        return [$acceptSocket, $peerName];
     }
 }
