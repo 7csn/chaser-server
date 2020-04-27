@@ -19,6 +19,7 @@
   "autoload": {
     "psr-4": {
       "chaser\\server\\": "src/"
-    }
+    },
+    "files": ["helper.php"]
   }
 }

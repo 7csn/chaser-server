@@ -14,13 +14,6 @@ use Countable;
 abstract class Worker implements Countable
 {
     /**
-     * 管理对象
-     *
-     * @var Master
-     */
-    protected $master;
-
-    /**
      * 职员数量
      *
      * @var int
@@ -69,9 +62,8 @@ abstract class Worker implements Countable
      * @param Reactor $reactor
      * @param string $name
      */
-    public function __construct(Master $master, Reactor $reactor, string $name = 'none')
+    public function __construct(Reactor $reactor, string $name = 'none')
     {
-        $this->master = $master;
         $this->reactor = $reactor;
         $this->name = $name;
     }
@@ -91,7 +83,7 @@ abstract class Worker implements Countable
      */
     public function run()
     {
-        $this->master->setCmdTitle("Chaser[{$this->remit()}]：$this->listening");
+        chaserSetCmdTitle("Chaser[{$this->remit()}]：$this->listening");
 
         $this->reinstallSignal();
 

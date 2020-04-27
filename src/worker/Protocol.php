@@ -92,7 +92,6 @@ abstract class Protocol extends Worker
     /**
      * 构造函数
      *
-     * @param Master $master
      * @param Reactor $reactor
      * @param string $target
      * @param array $options
@@ -101,7 +100,6 @@ abstract class Protocol extends Worker
      * @param int $count
      */
     public function __construct(
-        Master $master,
         Reactor $reactor,
         string $target,
         array $options = [],
@@ -109,7 +107,7 @@ abstract class Protocol extends Worker
         string $name = 'none',
         int $count = 1
     ) {
-        parent::__construct($master, $reactor);
+        parent::__construct($reactor);
 
         $this->target = $target;
 

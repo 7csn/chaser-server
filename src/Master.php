@@ -200,8 +200,8 @@ class Master
      */
     protected function checkEnv()
     {
-        PHP_SAPI === 'cli' || $this->quit('only run in command line mode');
-        PHP_OS === 'Linux' || $this->quit('only run in Linux platform');
+        PHP_SAPI === 'cli' || chaserExit('only run in command line mode');
+        PHP_OS === 'Linux' || chaserExit('only run in Linux platform');
     }
 
     /**
@@ -233,7 +233,7 @@ class Master
 
         Log::setDir($this->logDir);
 
-        $this->setCmdTitle("Chaser：{$this->startFile}");
+        chaserSetCmdTitle("Chaser：{$this->startFile}");
 
         $this->initWorkers();
     }
@@ -260,35 +260,6 @@ class Master
         // 初始化日志目录
         $this->logDir = $this->storageDir . $this->startName . DIRECTORY_SEPARATOR;
         is_dir($this->logDir) || mkdir($this->logDir, 0777);
-    }
-
-    /**
-     * 打印错误并退出程序
-     *
-     * @param string $message 错误信息
-     * @param int $status 错误号
-     */
-    public function quit(string $message, int $status = 0)
-    {
-        echo $message, PHP_EOL;
-        exit($status);
-    }
-
-    /**
-     * 设置进程标题
-     *
-     * @param string $title
-     */
-    public function setCmdTitle($title)
-    {
-        if (function_exists('cli_set_process_title')) {
-            set_error_handler(function () {
-            });
-            cli_set_process_title($title);
-            restore_error_handler();
-        } elseif (extension_loaded('proctitle') && function_exists('setproctitle')) {
-            setproctitle($title);
-        }
     }
 
     /**
@@ -360,7 +331,7 @@ class Master
     {
         $fd = fopen($this->startFile, 'r');
         if (!$fd || !flock($fd, LOCK_EX)) {
-            $this->quit('Master already running');
+            chaserExit('Master already running');
         }
     }
 
@@ -382,7 +353,7 @@ class Master
 
         switch ($command) {
             case 'start':
-                $runningPid > 0 && $this->quit('Master already running');
+                $runningPid > 0 && chaserExit('Master already running');
                 break;
             case 'restart':
                 $stopGraceful = $mode === '-g';
@@ -393,18 +364,18 @@ class Master
                 $this->stopRunningMaster($runningPid, $stopGraceful);
                 exit(0);
             case 'reload':
-                $runningPid > 0 || $this->quit('Master not run');
+                $runningPid > 0 || chaserExit('Master not run');
                 $sig = $mode === '-g' ? SIGQUIT : SIGUSR1;
                 posix_kill($runningPid, $sig);
                 exit(0);
             case 'status':
-                $runningPid > 0 || $this->quit('Master not run');
+                $runningPid > 0 || chaserExit('Master not run');
                 break;
             case 'connections':
-                $runningPid > 0 || $this->quit('Master not run');
+                $runningPid > 0 || chaserExit('Master not run');
                 break;
             default:
-                $this->quit("Unknown command:$command");
+                chaserExit("Unknown command:$command");
         }
     }
 
@@ -427,7 +398,7 @@ class Master
      */
     protected function stopRunningMaster($pid, $graceful)
     {
-        $pid > 0 || $this->quit('Master not run');
+        $pid > 0 || chaserExit('Master not run');
 
         if ($graceful) {
             $sig = SIGTERM;
@@ -470,15 +441,15 @@ class Master
 
         // 分叉并退出父进程，让shell认为命令终止不用挂在终端上，摆脱进程组长身份
         $pid = pcntl_fork();
-        $pid === -1 && $this->quit('daemon mode: fork fail');
+        $pid === -1 && chaserExit('daemon mode: fork fail');
         $pid > 0 && exit(0);
 
         // 创建（不能是组长）没有控制终端的新会话，并成为组长
-        posix_setsid() === -1 && $this->quit('daemon mode: setSid fail');
+        posix_setsid() === -1 && chaserExit('daemon mode: setSid fail');
 
         // 再次分叉摆脱组长身份（组长可能会打开控制终端）
         $pid = pcntl_fork();
-        $pid === -1 && $this->quit('daemon mode: second fork fail');
+        $pid === -1 && chaserExit('daemon mode: second fork fail');
         $pid > 0 && exit(0);
     }
 
@@ -580,7 +551,7 @@ class Master
      */
     protected function savePid()
     {
-        file_put_contents($this->pidFile, posix_getpid()) || $this->quit("Can not save pid to $this->pidFile");
+        file_put_contents($this->pidFile, posix_getpid()) || chaserExit("Can not save pid to $this->pidFile");
     }
 
     /**
@@ -719,18 +690,5 @@ class Master
         return array_reduce($this->pidMap, function ($pidMap, $pidList) {
             return array_merge($pidMap, $pidList);
         }, []);
-    }
-
-    /**
-     * 判断当前系统是否支持端口复用
-     *
-     * @return bool|null
-     */
-    public function reusePort()
-    {
-        preg_match('/version ([\d\.]+)/', exec("cat /proc/version"), $match);
-        return isset($match[1])
-            ? version_compare($match[1], 3.9) ? true : false
-            : null;
     }
 }
