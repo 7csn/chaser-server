@@ -6,6 +6,7 @@ use chaser\container\Container;
 use chaser\server\reactor\Reactor;
 use chaser\server\reactor\Select;
 use chaser\server\worker\Http;
+use chaser\server\worker\Tcp;
 use chaser\server\worker\Worker;
 
 /**

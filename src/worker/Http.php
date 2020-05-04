@@ -3,6 +3,7 @@
 namespace chaser\server\worker;
 
 use chaser\server\connection\Http as HttpConnection;
+use chaser\server\reactor\Reactor;
 
 /**
  * 基于 http 协议的工作类
@@ -11,6 +12,13 @@ use chaser\server\connection\Http as HttpConnection;
  */
 class Http extends Tcp
 {
+    /**
+     * 控制器列表
+     *
+     * @var array
+     */
+    protected $classes = [];
+
     /**
      * 职权范围
      *
@@ -22,6 +30,32 @@ class Http extends Tcp
     }
 
     /**
+     * 构造函数
+     *
+     * @param Reactor $reactor
+     * @param string $target
+     * @param array $route
+     * @param null $app
+     * @param array $options
+     * @param bool $reusePort
+     * @param string $name
+     * @param int $count
+     */
+    public function __construct(
+        Reactor $reactor,
+        $target,
+        array $route = [],
+        $app = null,
+        array $options = [],
+        $reusePort = false,
+        $name = 'none',
+        $count = 1
+    ) {
+        parent::__construct($reactor, $target, $app, $options, $reusePort, $name, $count);
+        $this->classes = chaserFullyQualifiedNames(...$route);
+    }
+
+    /**
      * 获取客户端连接对
      *
      * @param resource $socket
@@ -30,6 +64,6 @@ class Http extends Tcp
      */
     protected function getConnection($socket, $peerName)
     {
-        return new HttpConnection($this, $socket, $peerName);
+        return new HttpConnection($this->reactor, $socket, $peerName, $this->app);
     }
 }

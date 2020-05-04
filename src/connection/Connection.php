@@ -10,11 +10,16 @@ namespace chaser\server\connection;
 abstract class Connection
 {
     /**
-     * 工作对象
+     * 统计信息
      *
-     * @var Worker
+     * @var array
      */
-    protected $worker;
+    public static $statistics = [
+        'count' => 0,
+        'request' => 0,
+        'exception' => 0,
+        'send_fail' => 0,
+    ];
 
     /**
      * 连接资源流
@@ -31,12 +36,11 @@ abstract class Connection
     protected $remoteAddress = '';
 
     /**
-     * 接收信息
+     * 应用类型
      *
-     * @param resource $socket
-     * @return mixed
+     * @var string
      */
-    abstract public function receive($socket);
+    protected $app;
 
     /**
      * 发送信息
@@ -56,15 +60,16 @@ abstract class Connection
     /**
      * 初始化
      *
-     * @param Worker $worker
-     * @param resource $socket
+     * @param $socket
      * @param string $remoteAddress
+     * @param string $app
      */
-    protected function __construct($worker, $socket, $remoteAddress = '')
+    protected function __construct($socket, $remoteAddress = '', $app)
     {
-        $this->worker = $worker;
         $this->socket = $socket;
         $this->remoteAddress = $remoteAddress;
+        $this->app = $app;
+        self::$statistics['count']++;
     }
 
     /**
@@ -150,6 +155,6 @@ abstract class Connection
      */
     public function isIpV6()
     {
-        return strpos($this->getRemoteIp(), ':') !== false;
+        return !$this->isIpV4();
     }
 }

@@ -60,7 +60,7 @@ class Tcp extends Protocol
     public function acceptConnection($socket)
     {
         $connection = $this->getConnection(...$this->acceptSocket($socket));
-//        $this->connections[$connection->id] = $connection;
+        $this->connections[$connection->id] = $connection;
     }
 
     /**
@@ -72,7 +72,7 @@ class Tcp extends Protocol
      */
     protected function getConnection($socket, $peerName)
     {
-        return new TcpConnection($this, $socket, $peerName);
+        return new TcpConnection($this->reactor, $socket, $peerName, $this->app);
     }
 
     /**
@@ -81,7 +81,7 @@ class Tcp extends Protocol
      * @param resource $socket
      * @return array
      */
-    protected function acceptSocket(resource $socket)
+    protected function acceptSocket($socket)
     {
         set_error_handler(function () {
         });

@@ -31,6 +31,13 @@ abstract class Protocol extends Worker
     protected $reusePort = false;
 
     /**
+     * 应用类型
+     *
+     * @var string
+     */
+    protected $app;
+
+    /**
      * 资源流上下文
      *
      * @var resource
@@ -91,6 +98,7 @@ abstract class Protocol extends Worker
      *
      * @param Reactor $reactor
      * @param string $target
+     * @param string $app
      * @param array $options
      * @param bool $reusePort
      * @param string $name
@@ -99,16 +107,19 @@ abstract class Protocol extends Worker
     public function __construct(
         Reactor $reactor,
         string $target,
-        array $options = [],
-        bool $reusePort = false,
-        string $name = 'none',
-        int $count = 1
+        $app = null,
+        $options = [],
+        $reusePort = false,
+        $name = 'none',
+        $count = 1
     ) {
         parent::__construct($reactor, $name);
 
         $this->target = $target;
 
         $this->listening = $this->transport() . '://' . $this->target;
+
+        $this->app = $app;
 
         $this->count = $count;
 
