@@ -3,22 +3,21 @@
 namespace chaser\server\connection;
 
 /**
- * text 服务器接收连接类
+ * frame 服务器接收连接类
  *
  * @package chaser\server\connection
  */
-class Text extends Tcp
+class Frame extends Tcp
 {
     /**
      * 解析包长度
      *
-     * @return int|null
+     * @return int|bool|null
      */
     protected function getPacketSize()
     {
-        $index = strpos($this->receiveBuffer, "\n");
-        if ($index !== false) {
-            return $index + 1;
+        if (strlen($this->receiveBuffer) >= 4) {
+            return unpack('Nlength', $this->receiveBuffer)['length'] ?: false;
         }
     }
 
@@ -30,7 +29,7 @@ class Text extends Tcp
      */
     protected static function encode($message)
     {
-        return $message . "\r\n";
+        return pack('N', 4 + strlen($message)) . $message;
     }
 
     /**
@@ -41,6 +40,6 @@ class Text extends Tcp
      */
     protected static function decode($package)
     {
-        return rtrim($package, "\r\n");
+        return substr($package, 4);
     }
 }

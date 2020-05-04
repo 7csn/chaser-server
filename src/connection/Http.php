@@ -24,62 +24,87 @@ class Http extends Tcp
     protected static $requestHeaderLimit = 4 << 10;
 
     /**
-     * 解出包长度
+     * 状态码列表
      *
-     * @var int
+     * @var array
      */
-    protected $packetSize = 0;
+    public static $codes = [
+        100 => 'Continue',
+        101 => 'Switching Protocols',
+        200 => 'OK',
+        201 => 'Created',
+        202 => 'Accepted',
+        203 => 'Non-Authoritative Information',
+        204 => 'No Content',
+        205 => 'Reset Content',
+        206 => 'Partial Content',
+        300 => 'Multiple Choices',
+        301 => 'Moved Permanently',
+        302 => 'Found',
+        303 => 'See Other',
+        304 => 'Not Modified',
+        305 => 'Use Proxy',
+        306 => '(Unused)',
+        307 => 'Temporary Redirect',
+        400 => 'Bad Request',
+        401 => 'Unauthorized',
+        402 => 'Payment Required',
+        403 => 'Forbidden',
+        404 => 'Not Found',
+        405 => 'Method Not Allowed',
+        406 => 'Not Acceptable',
+        407 => 'Proxy Authentication Required',
+        408 => 'Request Timeout',
+        409 => 'Conflict',
+        410 => 'Gone',
+        411 => 'Length Required',
+        412 => 'Precondition Failed',
+        413 => 'Request Entity Too Large',
+        414 => 'Request-URI Too Long',
+        415 => 'Unsupported Media Type',
+        416 => 'Requested Range Not Satisfiable',
+        417 => 'Expectation Failed',
+        422 => 'Unprocessable Entity',
+        423 => 'Locked',
+        500 => 'Internal Server Error',
+        501 => 'Not Implemented',
+        502 => 'Bad Gateway',
+        503 => 'Service Unavailable',
+        504 => 'Gateway Timeout',
+        505 => 'HTTP Version Not Supported',
+    ];
 
     /**
-     * 取包
+     * 解析包长度
      *
-     * @return bool|string|void
+     * @return int|false|null
      */
-    protected function getPackage()
+    protected function getPacketSize()
     {
-        if ($this->packetSize > 0) {
-            return $this->getPackageBySize();
-        }
-
         $header = $this->getBeforeNeedle("\r\n\r\n");
         if ($header) {
             $explode = explode("\r\n", $header);
             if (count($explode) >= 2 && self::checkFirstLine($explode[0]) && self::checkSecondLine($explode[1])) {
-                $this->packetSize = self::getRequestSize($header);
-                if ($this->packetSize) {
-                    return $this->getPackageBySize();
+                $packetSize = self::getRequestSize($header);
+                if ($packetSize) {
+                    return $packetSize;
                 }
             }
-            $this->badRequest();
+            return $this->error(400);
         } else {
             $receiveBufferLength = strlen($this->receiveBuffer);
 
             if ($receiveBufferLength > self::$requestHeaderLimit) {
-                return $this->outOfLimit('header');
+                return $this->error(413);
             }
 
             if ($this->getNeedleIndex()) {
                 if (!self::checkFirstLine($this->getBeforeNeedle())) {
-                    return $this->badRequest();
+                    return $this->error(400);
                 }
             } elseif ($receiveBufferLength > self::$requestUriLimit) {
-                return $this->outOfLimit();
+                return $this->error(414);
             }
-        }
-    }
-
-    /**
-     * 根据长度取包
-     *
-     * @return bool|string
-     */
-    protected function getPackageBySize()
-    {
-        if (strlen($this->receiveBuffer) >= $this->packetSize) {
-            $package = substr($this->receiveBuffer, 0, $this->packetSize);
-            $this->receiveBuffer = substr($this->receiveBuffer, $this->packetSize);
-            $this->packetSize = 0;
-            return $package;
         }
     }
 
@@ -167,20 +192,15 @@ class Http extends Tcp
     }
 
     /**
-     * 坏的请求包
-     */
-    protected function badRequest()
-    {
-        $this->close("HTTP/1.1 400 Bad Request\r\n\r\n", true);
-    }
-
-    /**
-     * 请求超限制
+     * 解包错误
      *
-     * @param string $message
+     * @param int $code
+     * @return bool
      */
-    protected function outOfLimit($message = 'uri')
+    protected function error($code)
     {
-        $this->close("HTTP/1.1 414 Request-" . $message . " too long\r\n\r\n", true);
+        $message = sprintf("HTTP/1.1 %d %s\r\n\r\n", $code, self::$codes[$code]);
+        $this->send($message, true);
+        return false;
     }
 }

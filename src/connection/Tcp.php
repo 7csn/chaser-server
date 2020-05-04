@@ -132,6 +132,13 @@ class Tcp extends Connection
     protected $receivePaused = false;
 
     /**
+     * 解析出的包长度
+     *
+     * @var int
+     */
+    protected $packetSize = 0;
+
+    /**
      * 初始化：监听网络
      *
      * @param Reactor $reactor
@@ -217,9 +224,6 @@ class Tcp extends Connection
         $package = $this->getPackage();
 
         if ($package) {
-
-            Log::record('request:' . $package);
-
             self::$statistics['request']++;
 
             $decode = static::decode($package);
@@ -227,7 +231,6 @@ class Tcp extends Connection
             $data = $this->app
                 ? is_callable($this->app) ? call_user_func($this->app, $decode) : new $this->app($decode)
                 : $decode;
-
             $this->send($data);
         }
     }
@@ -239,9 +242,42 @@ class Tcp extends Connection
      */
     protected function getPackage()
     {
-        $package = $this->receiveBuffer;
-        $this->receiveBuffer = '';
-        return $package;
+        if ($this->packetSize > 0) {
+            return $this->getPackageBySize();
+        } else {
+            $packetSize = $this->getPacketSize();
+            if ($packetSize) {
+                $this->packetSize = $packetSize;
+                return $this->getPackageBySize();
+            } elseif ($packetSize === false) {
+                $this->close();
+            }
+        }
+    }
+
+    /**
+     * 解析包长度
+     *
+     * @return int
+     */
+    protected function getPacketSize()
+    {
+        return strlen($this->receiveBuffer);
+    }
+
+    /**
+     * 根据长度取包
+     *
+     * @return bool|string
+     */
+    protected function getPackageBySize()
+    {
+        if (strlen($this->receiveBuffer) >= $this->packetSize) {
+            $package = substr($this->receiveBuffer, 0, $this->packetSize);
+            $this->receiveBuffer = substr($this->receiveBuffer, $this->packetSize);
+            $this->packetSize = 0;
+            return $package;
+        }
     }
 
     /**
