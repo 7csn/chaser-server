@@ -97,6 +97,7 @@ class Master
      * @var array
      */
     protected $functions = [
+        'tcp' => Tcp::class,
         'http' => Http::class
     ];
 
