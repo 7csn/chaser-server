@@ -4,6 +4,11 @@ namespace chaser\server\worker;
 
 use chaser\server\connection\Tcp as TcpConnection;
 
+/**
+ * 基于 tcp 协议的工作类
+ *
+ * @package chaser\server\worker
+ */
 class Tcp extends Protocol
 {
     /**

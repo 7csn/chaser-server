@@ -7,6 +7,7 @@ use chaser\server\reactor\Reactor;
 use chaser\server\reactor\Select;
 use chaser\server\worker\Http;
 use chaser\server\worker\Tcp;
+use chaser\server\worker\Text;
 use chaser\server\worker\Worker;
 
 /**
@@ -98,6 +99,7 @@ class Master
      */
     protected $functions = [
         'tcp' => Tcp::class,
+        'text' => Text::class,
         'http' => Http::class
     ];
 

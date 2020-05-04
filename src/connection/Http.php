@@ -2,8 +2,6 @@
 
 namespace chaser\server\connection;
 
-use chaser\server\Log;
-
 /**
  * http 服务器接收连接类
  *

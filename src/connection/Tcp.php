@@ -222,7 +222,7 @@ class Tcp extends Connection
 
             self::$statistics['request']++;
 
-            $decode = self::decode($package);
+            $decode = static::decode($package);
 
             $data = $this->app
                 ? is_callable($this->app) ? call_user_func($this->app, $decode) : new $this->app($decode)
@@ -312,7 +312,7 @@ class Tcp extends Connection
         }
 
         if ($raw === false) {
-            $data = self::encode($data);
+            $data = static::encode($data);
             if (!$data) {
                 return null;
             }
