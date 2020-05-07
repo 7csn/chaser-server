@@ -70,12 +70,27 @@ if (!function_exists('chaserDatetime')) {
     /**
      * 获取当前精确日期时间
      *
-     * @param int $decimals
+     * @param int $decimals 小数位 1-6
      * @return string
      */
-    function chaserDatetime($decimals = 4)
+    function chaserDatetime($decimals = 6)
     {
-        return date('H:i:s') . '.' . str_pad(substr(microtime(true), 11), $decimals, '0');
+        return date('H:i:s') . substr(microtime(), 1, $decimals + 1);
+    }
+}
+
+if (!function_exists('chaserTime')) {
+    /**
+     * 获取当前精确时间
+     *
+     * @param int $decimals 小数位 1-6
+     * @return string
+     */
+    function chaserTime($decimals = 6)
+    {
+        return array_reduce(explode(' ', microtime()), function ($result, $item) use ($decimals) {
+            return bcadd($result, $item, $decimals);
+        });
     }
 }
 

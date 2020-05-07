@@ -27,7 +27,7 @@ class Frame extends Tcp
      * @param string $message
      * @return string
      */
-    protected static function encode($message)
+    protected function encode($message)
     {
         return pack('N', 4 + strlen($message)) . $message;
     }
@@ -38,7 +38,7 @@ class Frame extends Tcp
      * @param string $package
      * @return string
      */
-    protected static function decode($package)
+    protected function decode($package)
     {
         return substr($package, 4);
     }

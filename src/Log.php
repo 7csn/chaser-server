@@ -66,7 +66,6 @@ class Log
      * 设置目录
      *
      * @param string $dir
-     * @return $this
      */
     public static function setDir(string $dir)
     {

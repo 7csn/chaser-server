@@ -226,12 +226,15 @@ class Tcp extends Connection
         if ($package) {
             self::$statistics['request']++;
 
-            $decode = static::decode($package);
+            $decode = $this->decode($package);
 
-            $data = $this->app
+            ob_start();
+            $return = $this->app
                 ? is_callable($this->app) ? call_user_func($this->app, $decode) : new $this->app($decode)
                 : $decode;
-            $this->send($data);
+            $content = ob_get_clean();
+
+            $this->send($content . $return);
         }
     }
 
@@ -286,7 +289,7 @@ class Tcp extends Connection
      * @param string $message
      * @return string
      */
-    protected static function encode($message)
+    protected function encode($message)
     {
         return $message;
     }
@@ -297,7 +300,7 @@ class Tcp extends Connection
      * @param string $package
      * @return string
      */
-    protected static function decode($package)
+    protected function decode($package)
     {
         return $package;
     }
@@ -348,7 +351,7 @@ class Tcp extends Connection
         }
 
         if ($raw === false) {
-            $data = static::encode($data);
+            $data = $this->encode($data);
             if (!$data) {
                 return null;
             }

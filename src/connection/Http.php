@@ -2,6 +2,8 @@
 
 namespace chaser\server\connection;
 
+use chaser\server\Log;
+
 /**
  * http 服务器接收连接类
  *
@@ -9,6 +11,20 @@ namespace chaser\server\connection;
  */
 class Http extends Tcp
 {
+    /**
+     * 头信息缓存
+     *
+     * @var array
+     */
+    protected $headers = [];
+
+    /**
+     * 是否压缩
+     *
+     * @var bool
+     */
+    protected $gzip = false;
+
     /**
      * 请求 uri 信息长度限制
      *
@@ -116,7 +132,7 @@ class Http extends Tcp
      */
     protected static function checkFirstLine(string $data)
     {
-        return preg_match('/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) \/.*? HTTP\/[\d\.]+$/i', $data);
+        return preg_match('/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) \/.*? HTTP\/[\d\.]+$/', $data);
     }
 
     /**
@@ -127,7 +143,7 @@ class Http extends Tcp
      */
     protected static function checkSecondLine(string $data)
     {
-        return preg_match('/^Host: [a-z\d\.]+(:[1-9]\d{0,4})?$/i', $data);
+        return preg_match('/^Host: ?[a-z\d\.]+(:[1-9]\d{0,4})?$/', $data);
     }
 
     /**
@@ -181,14 +197,228 @@ class Http extends Tcp
         return $method === 'DELETE' ? $minLength : 0;
     }
 
-    protected static function encode($message)
+    /**
+     * 编码
+     *
+     * @param string $content
+     * @return string
+     */
+    protected function encode($content)
     {
-        return parent::encode($message);
+        if (!isset($this->headers['Http-Code'])) {
+            $header = "HTTP/1.1 200 OK\r\n";
+        } else {
+            $header = $this->headers['Http-Code'] . "\r\n";
+            unset($this->headers['Http-Code']);
+        }
+
+        if (!isset($this->headers['Content-Type'])) {
+            $header .= "Content-Type: text/html;charset=utf-8\r\n";
+        }
+
+        foreach ($this->headers as $key => $item) {
+            if ('Set-Cookie' === $key && is_array($item)) {
+                foreach ($item as $it) {
+                    $header .= $it . "\r\n";
+                }
+            } else {
+                $header .= $item . "\r\n";
+            }
+        }
+        if ($this->gzip && isset($this->gzip) && $this->gzip) {
+            $header .= "Content-Encoding: gzip\r\n";
+            $content = gzencode($content, $this->gzip);
+        }
+
+        $header .= "Server: chaser/1.0.0\r\nContent-Length: " . strlen($content) . "\r\n\r\n";
+
+        return $header . $content;
     }
 
-    protected static function decode($package)
+    /**
+     * 解码：重置超全局数组
+     *
+     * @param string $package
+     * @return array
+     */
+    protected function decode($package)
     {
-        return parent::decode($package);
+        $get = $post = $cookie = $request = $files = $session = $server = [];
+
+        // 清除头缓存
+        $this->headers = ['Connection' => 'Connection: keep-alive'];
+
+        list($header, $body) = explode("\r\n\r\n", $package, 2);
+
+        $lines = explode("\r\n", $header);
+
+        $server = [
+            'SERVER_SOFTWARE' => 'chaser/1.0.0',
+            'QUERY_STRING' => '',
+            'CONTENT_TYPE' => '',
+            'SERVER_NAME' => '',
+            'HTTP_HOST' => '',
+            'HTTP_USER_AGENT' => '',
+            'HTTP_ACCEPT' => '',
+            'HTTP_ACCEPT_LANGUAGE' => '',
+            'HTTP_ACCEPT_ENCODING' => '',
+            'HTTP_COOKIE' => '',
+            'HTTP_CONNECTION' => ''
+        ];
+
+        // 方法、资源、协议
+        list($server['REQUEST_METHOD'], $server['REQUEST_URI'], $server['SERVER_PROTOCOL']) = explode(' ',
+            array_shift($lines));
+
+        foreach ($lines as $line) {
+            if (empty($line)) {
+                continue;
+            }
+
+            list($key, $value) = explode(':', $line, 2);
+
+            $key = str_replace('-', '_', strtoupper($key));
+            $value = trim($value);
+
+            $server['HTTP_' . $key] = $value;
+
+            switch ($key) {
+                case 'HOST':
+                    $server['SERVER_NAME'] = strstr($value, ':', true) ?: $value;
+                    break;
+                case 'COOKIE':
+                    parse_str(str_replace('; ', '&', $server['HTTP_COOKIE']), $cookie);
+                    break;
+                case 'CONTENT_TYPE':
+                    if (preg_match('/boundary="?(\S+)"?/', $value, $match)) {
+                        $server['CONTENT_TYPE'] = 'multipart/form-data';
+                        if ($server['REQUEST_METHOD'] === 'POST') {
+                            $files = self::parseUploadFiles($body, '--' . $match[1], $post);
+                        }
+                    } else {
+                        $server['CONTENT_TYPE'] = strstr($value, ';', true) ?: $value;
+                        switch ($server['CONTENT_TYPE']) {
+                            case 'application/json':
+                                if ($server['REQUEST_METHOD'] === 'POST') {
+                                    $post = json_decode($body, true);
+                                } elseif ($server['REQUEST_METHOD'] !== 'GET') {
+                                    $request = json_decode($body, true);
+                                }
+                                break;
+                            case 'application/x-www-form-urlencoded':
+                                if ($server['REQUEST_METHOD'] === 'POST') {
+                                    parse_str($body, $post);
+                                } elseif ($server['REQUEST_METHOD'] !== 'GET') {
+                                    parse_str($body, $request);
+                                }
+                                break;
+                        }
+                    }
+                    break;
+                case 'CONTENT_LENGTH':
+                    $server['CONTENT_LENGTH'] = $value;
+                    break;
+                case 'UPGRADE':
+//                    if ($value == 'websocket') {
+//                        $connection->protocol = "\\Workerman\\Protocols\\Websocket";
+//                        return \Workerman\Protocols\Websocket::input($package, $connection);
+//                    }
+                    break;
+            }
+        }
+
+        if (strpos($server['HTTP_ACCEPT_ENCODING'], 'gzip') !== false) {
+            $this->gzip = true;
+        }
+
+        // 原始请求数据
+        $GLOBALS['HTTP_RAW_REQUEST_DATA'] = $GLOBALS['HTTP_RAW_POST_DATA'] = $body;
+
+        // QUERY_STRING
+        $server['QUERY_STRING'] = parse_url($server['REQUEST_URI'], PHP_URL_QUERY);
+        if ($server['QUERY_STRING']) {
+            parse_str($server['QUERY_STRING'], $get);
+        }
+
+        // 整合请求参数，优先级：POST > 类 POST > GET > COOKIE
+        $request = array_merge($cookie, $get, $request, $post);
+
+        // 本地：IP、端口号
+        $server['SERVER_ADDR'] = $this->getLocalIp();
+        $server['SERVER_PORT'] = $this->getLocalPort();
+
+        // 远程：IP、端口号
+        $server['REMOTE_ADDR'] = $this->getRemoteIp();
+        $server['REMOTE_PORT'] = $this->getRemotePort();
+
+        // 时间
+        $server['REQUEST_TIME'] = (int)$server['REQUEST_TIME_FLOAT'] = microtime(true);
+
+        return [
+            '_GET' => $get,
+            '_POST' => $post,
+            '_COOKIE' => $cookie,
+            '_REQUEST' => $request,
+            '_FILES' => $files,
+            '_SESSION' => $session,
+            '_SERVER' => $server
+        ];
+    }
+
+    /**
+     * 解析上传文件数组
+     *
+     * @param string $body
+     * @param string $boundary
+     * @param array $post
+     * @return array
+     */
+    protected static function parseUploadFiles($body, $boundary, &$post)
+    {
+        $files = [];
+
+        // 文件上传内容列表
+        $body = substr($body, 0, -4 - strlen($boundary));
+        $dataList = explode("{$boundary}\r\n", $body);
+
+        // 首个为空则移除
+        $dataList[0] === '' && array_shift($dataList);
+
+
+        foreach ($dataList as $index => $data) {
+
+            list($dataHeaderList, $dataBody) = explode("\r\n\r\n", $data, 2);
+
+            // 移除尾部 \r\n
+            $dataBody = substr($dataBody, 0, -2);
+
+            foreach (explode("\r\n", $dataHeaderList) as $dataHeader) {
+
+                list($headerKey, $headerValue) = explode(": ", $dataHeader);
+
+                switch (strtolower($headerKey)) {
+                    case "content-disposition":
+                        // 文件数据
+                        if (preg_match('/name="(.*?)"; filename="(.*?)"$/', $headerValue, $match)) {
+                            $files[$index] = [
+                                'name' => $match[1],
+                                'file_name' => $match[2],
+                                'file_data' => $dataBody,
+                                'file_size' => strlen($dataBody),
+                            ];
+                        }// POST 数据
+                        elseif (preg_match('/name="(.*?)"$/', $headerValue, $match)) {
+                            $post[$match[1]] = $dataBody;
+                        }
+                        break;
+                    case "content-type":
+                        $files[$index]['file_type'] = trim($headerValue);
+                        break;
+                }
+            }
+        }
+
+        return $files;
     }
 
     /**
