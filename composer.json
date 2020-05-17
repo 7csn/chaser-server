@@ -6,7 +6,8 @@
     "php": ">=7.1.0",
     "ext-posix": "*",
     "ext-pcntl": "*",
-    "7csn/container": "dev-master"
+    "7csn/container": "dev-master",
+    "7csn/route": "dev-master"
   },
   "license": "MIT",
   "authors": [
@@ -20,6 +21,8 @@
     "psr-4": {
       "chaser\\server\\": "src/"
     },
-    "files": ["helper.php"]
+    "files": [
+      "helper.php"
+    ]
   }
 }

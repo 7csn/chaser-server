@@ -13,13 +13,6 @@ use chaser\server\reactor\Reactor;
 class Http extends Tcp
 {
     /**
-     * 控制器列表
-     *
-     * @var array
-     */
-    protected $classes = [];
-
-    /**
      * 职权范围
      *
      * @return string
@@ -52,7 +45,6 @@ class Http extends Tcp
         $count = 1
     ) {
         parent::__construct($reactor, $target, $app, $options, $reusePort, $name, $count);
-        $this->classes = chaserFullyQualifiedNames(...$route);
     }
 
     /**

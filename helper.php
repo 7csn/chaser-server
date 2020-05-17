@@ -93,29 +93,3 @@ if (!function_exists('chaserTime')) {
         });
     }
 }
-
-if (!function_exists('chaserFullyQualifiedNames')) {
-    /**
-     * 获取指定目录下全限定类名列表
-     *
-     * @param string $namespace
-     * @param string $path
-     * @param string[] $classes [...$class]
-     * @return array
-     */
-    function chaserFullyQualifiedNames($namespace, $path, $classes = [])
-    {
-        $len = strlen($path);
-        foreach (glob($path . '*.php') as $file) {
-            $classes[] = $namespace . str_replace(DIRECTORY_SEPARATOR, '\\', substr($file, $len, -4));
-        }
-        foreach (glob($path . '*', GLOB_ONLYDIR) as $path) {
-            $classes = chaserFullyQualifiedNames(
-                $namespace . str_replace(DIRECTORY_SEPARATOR, '\\', substr($path, $len)) . '\\',
-                $path . DIRECTORY_SEPARATOR,
-                $classes
-            );
-        }
-        return $classes;
-    }
-}
