@@ -2,6 +2,7 @@
 
 namespace chaser\server\worker;
 
+use chaser\route\Route;
 use chaser\server\connection\Http as HttpConnection;
 use chaser\server\reactor\Reactor;
 
@@ -45,6 +46,7 @@ class Http extends Tcp
         $count = 1
     ) {
         parent::__construct($reactor, $target, $app, $options, $reusePort, $name, $count);
+        new Route(...$route);
     }
 
     /**
